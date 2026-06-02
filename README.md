@@ -12,8 +12,7 @@
 
 
 
-<img src='.直板机效果.png' width='320'>
-
+<img src=直板机效果.png width='320'>
 
 
 
