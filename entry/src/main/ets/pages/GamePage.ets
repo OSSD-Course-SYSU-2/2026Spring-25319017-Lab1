@@ -1,9 +1,11 @@
 /**
  * 打飞机游戏页面
  * 使用鼠标/触摸控制飞机移动，自动发射子弹，击落敌机得分
+ * 支持多端部署：手机、平板、手表
  */
 
 import router from '@ohos.router'
+import { DeviceAdapter, DeviceType, DeviceConfig } from '../common/DeviceAdapter'
 
 // 最高分数据模型
 class HighScore {
@@ -108,6 +110,9 @@ class Enemy {
 @Entry
 @Component
 struct GamePage {
+  // 设备配置
+  @State deviceConfig: DeviceConfig = DeviceAdapter.getDeviceConfig()
+  
   // 屏幕适配相关
   @State gameWidth: number = DESIGN_WIDTH
   @State gameHeight: number = DESIGN_HEIGHT
@@ -148,6 +153,8 @@ struct GamePage {
   private gameLoopTimer: number = -1
 
   aboutToAppear() {
+    // 初始化设备配置
+    this.deviceConfig = DeviceAdapter.getDeviceConfig()
     // 获取屏幕尺寸并计算缩放比例
     this.initScreenSize()
     // 获取难度参数
@@ -187,18 +194,43 @@ struct GamePage {
   // 初始化屏幕尺寸
   initScreenSize() {
     try {
+      // 使用设备适配器获取配置
+      const config = this.deviceConfig
+      
+      // 根据设备类型设置设计尺寸
+      let designWidth: number = DESIGN_WIDTH
+      let designHeight: number = DESIGN_HEIGHT
+      
+      if (config.deviceType === DeviceType.TABLET) {
+        // 平板设备使用更大的设计尺寸
+        designWidth = 720
+        designHeight = 1024
+      } else if (config.deviceType === DeviceType.WATCH) {
+        // 手表设备使用更小的设计尺寸
+        designWidth = 200
+        designHeight = 200
+      } else if (config.deviceType === DeviceType.TV) {
+        // 电视设备使用超大设计尺寸
+        designWidth = 1280
+        designHeight = 720
+      } else if (config.deviceType === DeviceType.CAR) {
+        // 车载设备使用中等偏大设计尺寸
+        designWidth = 800
+        designHeight = 480
+      }
+      
       // 获取设备屏幕宽度（使用系统API）
-      const screenWidth: number = 360  // 默认值，实际项目中应使用系统API
-      const screenHeight: number = 640  // 默认值，实际项目中应使用系统API
+      const screenWidth: number = config.screenWidth
+      const screenHeight: number = config.screenHeight
 
       // 计算缩放比例，保持设计比例
-      const widthScale: number = screenWidth / DESIGN_WIDTH
-      const heightScale: number = screenHeight / DESIGN_HEIGHT
+      const widthScale: number = screenWidth / designWidth
+      const heightScale: number = screenHeight / designHeight
       this.scaleRatio = Math.min(widthScale, heightScale)
 
       // 设置实际游戏区域大小
-      this.gameWidth = Math.floor(DESIGN_WIDTH * this.scaleRatio)
-      this.gameHeight = Math.floor(DESIGN_HEIGHT * this.scaleRatio)
+      this.gameWidth = Math.floor(designWidth * this.scaleRatio)
+      this.gameHeight = Math.floor(designHeight * this.scaleRatio)
 
       // 重新计算玩家初始位置
       this.playerX = this.gameWidth / 2 - PLAYER_SIZE * this.scaleRatio / 2
@@ -535,20 +567,23 @@ struct GamePage {
       Column() {
         Row() {
           Text(`分数: ${this.score}`)
-            .fontSize(20 * this.scaleRatio)
+            .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
             .fontColor('#ffffff')
             .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
 
-          Text(`难度: ${this.getDifficultyName()}`)
-            .fontSize(16 * this.scaleRatio)
-            .fontColor('#fbbf24')
-            .margin({ right: 15 * this.scaleRatio })
+          // 手表设备隐藏难度显示
+          if (this.deviceConfig.deviceType !== DeviceType.WATCH) {
+            Text(`难度: ${this.getDifficultyName()}`)
+              .fontSize(16 * this.scaleRatio * this.deviceConfig.fontSizeScale)
+              .fontColor('#fbbf24')
+              .margin({ right: 15 * this.scaleRatio })
+          }
 
           // 暂停按钮
           Button() {
             Text('⏸')
-              .fontSize(20 * this.scaleRatio)
+              .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontColor('#ffffff')
           }
           .width(40 * this.scaleRatio)
@@ -569,7 +604,7 @@ struct GamePage {
         Column() {
           Column() {
             Text('游戏暂停')
-              .fontSize(32 * this.scaleRatio)
+              .fontSize(32 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontColor('#00d4ff')
               .fontWeight(FontWeight.Bold)
               .margin({ bottom: 30 * this.scaleRatio })
@@ -577,7 +612,7 @@ struct GamePage {
             Button('继续游戏')
               .width(180 * this.scaleRatio)
               .height(50 * this.scaleRatio)
-              .fontSize(20 * this.scaleRatio)
+              .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontWeight(FontWeight.Bold)
               .backgroundColor('#4ade80')
               .borderRadius(25 * this.scaleRatio)
@@ -589,7 +624,7 @@ struct GamePage {
             Button('重新开始')
               .width(180 * this.scaleRatio)
               .height(50 * this.scaleRatio)
-              .fontSize(20 * this.scaleRatio)
+              .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontWeight(FontWeight.Bold)
               .backgroundColor('#fbbf24')
               .borderRadius(25 * this.scaleRatio)
@@ -602,7 +637,7 @@ struct GamePage {
             Button('返回首页')
               .width(180 * this.scaleRatio)
               .height(50 * this.scaleRatio)
-              .fontSize(20 * this.scaleRatio)
+              .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontWeight(FontWeight.Bold)
               .backgroundColor('#ef4444')
               .borderRadius(25 * this.scaleRatio)
@@ -627,27 +662,30 @@ struct GamePage {
         Column() {
           Column() {
             Text('游戏结束')
-              .fontSize(36 * this.scaleRatio)
+              .fontSize(36 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontColor('#ff4757')
               .fontWeight(FontWeight.Bold)
               .textShadow({ radius: 10, color: '#ff4757', offsetX: 0, offsetY: 0 })
               .margin({ bottom: 20 * this.scaleRatio })
 
             Text(`最终分数: ${this.score}`)
-              .fontSize(24 * this.scaleRatio)
+              .fontSize(24 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontColor('#ffffff')
               .fontWeight(FontWeight.Bold)
               .margin({ bottom: 10 * this.scaleRatio })
 
-            Text(`难度: ${this.getDifficultyName()}`)
-              .fontSize(18 * this.scaleRatio)
-              .fontColor('#fbbf24')
-              .margin({ bottom: 30 * this.scaleRatio })
+            // 手表设备隐藏难度显示
+            if (this.deviceConfig.deviceType !== DeviceType.WATCH) {
+              Text(`难度: ${this.getDifficultyName()}`)
+                .fontSize(18 * this.scaleRatio * this.deviceConfig.fontSizeScale)
+                .fontColor('#fbbf24')
+                .margin({ bottom: 30 * this.scaleRatio })
+            }
 
             Button('重新开始')
               .width(180 * this.scaleRatio)
               .height(50 * this.scaleRatio)
-              .fontSize(20 * this.scaleRatio)
+              .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontWeight(FontWeight.Bold)
               .backgroundColor('#00d4ff')
               .borderRadius(25 * this.scaleRatio)
@@ -659,7 +697,7 @@ struct GamePage {
             Button('返回首页')
               .width(180 * this.scaleRatio)
               .height(50 * this.scaleRatio)
-              .fontSize(20 * this.scaleRatio)
+              .fontSize(20 * this.scaleRatio * this.deviceConfig.fontSizeScale)
               .fontWeight(FontWeight.Bold)
               .backgroundColor('#6c5ce7')
               .borderRadius(25 * this.scaleRatio)

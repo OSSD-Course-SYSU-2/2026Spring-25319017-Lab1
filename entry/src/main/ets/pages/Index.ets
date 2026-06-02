@@ -1,4 +1,5 @@
 import router from '@ohos.router'
+import { DeviceAdapter, DeviceType, DeviceConfig } from '../common/DeviceAdapter'
 
 // 最高分数据模型
 class HighScore {
@@ -62,8 +63,10 @@ struct Index {
   @State showHighScores: boolean = false
   @StorageLink('plane_game_high_scores') @Watch('onHighScoresChange') highScoresData: string = '[]'
   @State highScores: HighScore[] = []
+  @State deviceConfig: DeviceConfig = DeviceAdapter.getDeviceConfig()
 
   aboutToAppear() {
+    this.deviceConfig = DeviceAdapter.getDeviceConfig()
     this.loadHighScores()
   }
 
@@ -103,66 +106,71 @@ struct Index {
         // 标题
         Column() {
           Text(this.message)
-            .fontSize(48)
+            .fontSize(48 * this.deviceConfig.fontSizeScale)
             .fontWeight(FontWeight.Bold)
             .fontColor('#00d4ff')
             .textShadow({ radius: 10, color: '#00d4ff', offsetX: 0, offsetY: 0 })
 
-          Text('PLANE SHOOTER')
-            .fontSize(16)
-            .fontColor('#4a90e2')
-            .letterSpacing(8)
-            .margin({ top: 5 })
+          // 手表设备隐藏副标题
+          if (this.deviceConfig.deviceType !== DeviceType.WATCH) {
+            Text('PLANE SHOOTER')
+              .fontSize(16 * this.deviceConfig.fontSizeScale)
+              .fontColor('#4a90e2')
+              .letterSpacing(8)
+              .margin({ top: 5 })
+          }
         }
-        .margin({ bottom: 30 })
+        .margin({ bottom: 30 * this.deviceConfig.scaleRatio })
 
         // 游戏图标
         Column() {
           Text('✈')
-            .fontSize(120)
+            .fontSize(120 * this.deviceConfig.scaleRatio)
             .fontColor('#ff4757')
             .rotate({ angle: 180 })
             .textShadow({ radius: 20, color: '#ff4757', offsetX: 0, offsetY: 0 })
         }
-        .margin({ bottom: 40 })
+        .margin({ bottom: 40 * this.deviceConfig.scaleRatio })
 
-        // 难度选择
-        Column() {
-          Text('游戏难度')
-            .fontSize(18)
-            .fontColor('#ffffff')
-            .fontWeight(FontWeight.Bold)
-            .margin({ bottom: 15 })
+        // 难度选择 - 手表设备简化显示
+        if (this.deviceConfig.deviceType !== DeviceType.WATCH) {
+          Column() {
+            Text('游戏难度')
+              .fontSize(18 * this.deviceConfig.fontSizeScale)
+              .fontColor('#ffffff')
+              .fontWeight(FontWeight.Bold)
+              .margin({ bottom: 15 })
 
-          Row() {
-            ForEach([1, 2, 3], (level: number) => {
-              Button(this.getDifficultyName(level))
-                .width(80)
-                .height(40)
-                .fontSize(16)
-                .fontWeight(FontWeight.Bold)
-                .backgroundColor(this.difficulty === level ? this.getDifficultyColor(level) : '#3a3a5a')
-                .borderRadius(20)
-                .border({ width: 2, color: this.difficulty === level ? this.getDifficultyColor(level) : '#5a5a7a' })
-                .onClick(() => {
-                  this.difficulty = level
-                })
-                .margin({ left: 5, right: 5 })
-            })
+            Row() {
+              ForEach([1, 2, 3], (level: number) => {
+                Button(this.getDifficultyName(level))
+                  .width(80 * this.deviceConfig.scaleRatio)
+                  .height(40 * this.deviceConfig.scaleRatio)
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontWeight(FontWeight.Bold)
+                  .backgroundColor(this.difficulty === level ? this.getDifficultyColor(level) : '#3a3a5a')
+                  .borderRadius(20)
+                  .border({ width: 2, color: this.difficulty === level ? this.getDifficultyColor(level) : '#5a5a7a' })
+                  .onClick(() => {
+                    this.difficulty = level
+                  })
+                  .margin({ left: 5, right: 5 })
+              })
+            }
+            .margin({ bottom: 10 })
+
+            Text(`当前难度: ${this.getDifficultyName(this.difficulty)}`)
+              .fontSize(14 * this.deviceConfig.fontSizeScale)
+              .fontColor(this.getDifficultyColor(this.difficulty))
           }
-          .margin({ bottom: 10 })
-
-          Text(`当前难度: ${this.getDifficultyName(this.difficulty)}`)
-            .fontSize(14)
-            .fontColor(this.getDifficultyColor(this.difficulty))
+          .margin({ bottom: 30 * this.deviceConfig.scaleRatio })
         }
-        .margin({ bottom: 30 })
 
         // 开始游戏按钮
         Button('开始游戏')
-          .width(220)
-          .height(65)
-          .fontSize(26)
+          .width(220 * this.deviceConfig.scaleRatio)
+          .height(65 * this.deviceConfig.scaleRatio)
+          .fontSize(26 * this.deviceConfig.fontSizeScale)
           .fontWeight(FontWeight.Bold)
           .backgroundColor('#00d4ff')
           .borderRadius(32)
@@ -175,78 +183,82 @@ struct Index {
               }
             })
           })
-          .margin({ bottom: 15 })
+          .margin({ bottom: 15 * this.deviceConfig.scaleRatio })
 
-        // 查看最高分按钮
-        Button('排行榜')
-          .width(220)
-          .height(50)
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .backgroundColor('#6c5ce7')
-          .borderRadius(25)
-          .onClick(() => {
-            this.showHighScores = true
-          })
-          .margin({ bottom: 30 })
-
-        // 游戏说明
-        Column() {
-          Text('游戏说明')
-            .fontSize(20)
-            .fontColor('#ffffff')
+        // 查看最高分按钮 - 手表设备隐藏
+        if (this.deviceConfig.deviceType !== DeviceType.WATCH) {
+          Button('排行榜')
+            .width(220 * this.deviceConfig.scaleRatio)
+            .height(50 * this.deviceConfig.scaleRatio)
+            .fontSize(20 * this.deviceConfig.fontSizeScale)
             .fontWeight(FontWeight.Bold)
-            .margin({ bottom: 15 })
+            .backgroundColor('#6c5ce7')
+            .borderRadius(25)
+            .onClick(() => {
+              this.showHighScores = true
+            })
+            .margin({ bottom: 30 * this.deviceConfig.scaleRatio })
+        }
 
+        // 游戏说明 - 手表设备隐藏
+        if (this.deviceConfig.deviceType !== DeviceType.WATCH) {
           Column() {
-            Row() {
-              Text('✦')
-                .fontSize(16)
-                .fontColor('#00d4ff')
-                .margin({ right: 8 })
-              Text('移动鼠标控制飞机')
-                .fontSize(16)
-                .fontColor('#aaaaaa')
-            }
-            .margin({ bottom: 8 })
+            Text('游戏说明')
+              .fontSize(20 * this.deviceConfig.fontSizeScale)
+              .fontColor('#ffffff')
+              .fontWeight(FontWeight.Bold)
+              .margin({ bottom: 15 })
 
-            Row() {
-              Text('✦')
-                .fontSize(16)
-                .fontColor('#00d4ff')
-                .margin({ right: 8 })
-              Text('自动发射子弹')
-                .fontSize(16)
-                .fontColor('#aaaaaa')
-            }
-            .margin({ bottom: 8 })
+            Column() {
+              Row() {
+                Text('✦')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#00d4ff')
+                  .margin({ right: 8 })
+                Text('移动鼠标控制飞机')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#aaaaaa')
+              }
+              .margin({ bottom: 8 })
 
-            Row() {
-              Text('✦')
-                .fontSize(16)
-                .fontColor('#00d4ff')
-                .margin({ right: 8 })
-              Text('击落敌机得分')
-                .fontSize(16)
-                .fontColor('#aaaaaa')
-            }
-            .margin({ bottom: 8 })
+              Row() {
+                Text('✦')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#00d4ff')
+                  .margin({ right: 8 })
+                Text('自动发射子弹')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#aaaaaa')
+              }
+              .margin({ bottom: 8 })
 
-            Row() {
-              Text('✦')
-                .fontSize(16)
-                .fontColor('#00d4ff')
-                .margin({ right: 8 })
-              Text('避免被敌机撞到')
-                .fontSize(16)
-                .fontColor('#aaaaaa')
+              Row() {
+                Text('✦')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#00d4ff')
+                  .margin({ right: 8 })
+                Text('击落敌机得分')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#aaaaaa')
+              }
+              .margin({ bottom: 8 })
+
+              Row() {
+                Text('✦')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#00d4ff')
+                  .margin({ right: 8 })
+                Text('避免被敌机撞到')
+                  .fontSize(16 * this.deviceConfig.fontSizeScale)
+                  .fontColor('#aaaaaa')
+              }
             }
           }
+          .padding(20)
+          .backgroundColor('rgba(255, 255, 255, 0.05)')
+          .borderRadius(15)
+          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
         }
-        .padding(20)
-        .backgroundColor('rgba(255, 255, 255, 0.05)')
-        .borderRadius(15)
-        .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
       }
       .width('100%')
       .height('100%')
